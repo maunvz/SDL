@@ -82,6 +82,7 @@ typedef struct
     struct zxdg_output_manager_v1 *xdg_output_manager;
     struct wp_viewporter *viewporter;
     struct wp_fractional_scale_manager_v1 *fractional_scale_manager;
+    struct lm_stereo_manager_v1 *stereo_manager;
 
     EGLDisplay edpy;
     EGLContext context;

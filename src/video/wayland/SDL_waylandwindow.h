@@ -91,6 +91,8 @@ typedef struct
     struct wp_viewport *draw_viewport;
     struct wp_fractional_scale_v1 *fractional_scale;
     struct xdg_toplevel_icon_v1 *xdg_toplevel_icon_v1;
+    struct lm_stereo_surface_v1 *stereo_surface;
+    SDL_bool stereo_sbs;
 
     struct Wayland_SHMBuffer icon;
 

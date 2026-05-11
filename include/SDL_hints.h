@@ -2403,6 +2403,26 @@ extern "C" {
 #define SDL_HINT_VIDEO_WAYLAND_EMULATE_MOUSE_WARP "SDL_VIDEO_WAYLAND_EMULATE_MOUSE_WARP"
 
 /**
+ * Enable side-by-side stereo buffer layout for Wayland surfaces.
+ *
+ * When set to "1" on a Wayland window, SDL will:
+ *  - Allocate an EGL/shm buffer twice as wide as the logical window size.
+ *  - Use wp_viewport to keep the compositor logical size at window->w x window->h.
+ *  - Annotate the wl_surface with lm_stereo_surface_v1 (SBS_STEREO layout) if the
+ *    compositor advertises the lm_stereo_manager_v1 protocol.
+ *
+ * The drawable size reported by SDL_GetWindowSizeInPixels() will be 2*w x h.
+ * Set this hint before SDL_CreateWindow().
+ *
+ * This hint is only used on Wayland; it is ignored on other platforms.
+ *
+ * This hint can be set to the following values:
+ *   "0" - No stereo buffer (default).
+ *   "1" - Enable SBS stereo buffer (buffer width = 2 * logical width).
+ */
+#define SDL_HINT_VIDEO_WAYLAND_SURFACE_STEREO_SBS "SDL_VIDEO_WAYLAND_SURFACE_STEREO_SBS"
+
+/**
  * A variable that is the address of another SDL_Window* (as a hex string
  * formatted with "%p").
  *

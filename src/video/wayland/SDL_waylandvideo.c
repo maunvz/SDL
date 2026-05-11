@@ -60,6 +60,7 @@
 #include "fractional-scale-v1-client-protocol.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "xdg-toplevel-icon-v1-client-protocol.h"
+#include "linux-mirror-stereo-v1-client-protocol.h"
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
@@ -885,6 +886,8 @@ static void display_handle_global(void *data, struct wl_registry *registry, uint
         }
     } else if (SDL_strcmp(interface, "xdg_toplevel_icon_manager_v1") == 0) {
             d->xdg_toplevel_icon_manager_v1 = wl_registry_bind(d->registry, id, &xdg_toplevel_icon_manager_v1_interface, 1);
+    } else if (SDL_strcmp(interface, "lm_stereo_manager_v1") == 0) {
+        d->stereo_manager = wl_registry_bind(d->registry, id, &lm_stereo_manager_v1_interface, 1);
 #ifdef SDL_VIDEO_DRIVER_WAYLAND_QT_TOUCH
     } else if (SDL_strcmp(interface, "qt_touch_extension") == 0) {
         Wayland_touch_create(d, id);
@@ -1136,6 +1139,11 @@ static void Wayland_VideoCleanup(_THIS)
     if (data->xdg_toplevel_icon_manager_v1) {
         xdg_toplevel_icon_manager_v1_destroy(data->xdg_toplevel_icon_manager_v1);
         data->xdg_toplevel_icon_manager_v1 = NULL;
+    }
+
+    if (data->stereo_manager) {
+        lm_stereo_manager_v1_destroy(data->stereo_manager);
+        data->stereo_manager = NULL;
     }
 
     if (data->compositor) {

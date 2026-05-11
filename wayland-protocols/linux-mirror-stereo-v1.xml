@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="linux_mirror_stereo_v1">
+  <copyright>
+    SPDX-License-Identifier: MIT
+    Linux Mirror stereo buffer annotation protocol
+  </copyright>
+
+  <description summary="side-by-side stereo buffer layout annotation">
+    This protocol lets a Wayland client annotate a surface as carrying a
+    side-by-side (SBS) stereo buffer.  For an SBS surface the committed
+    buffer is exactly twice the logical surface width: the left half holds
+    the left-eye image and the right half holds the right-eye image.
+
+    Compositors that do not implement this protocol render the surface
+    normally (the full buffer is scaled into the logical viewport).
+    Compositors that do implement it can expose the annotation to capture
+    pipelines, which use it to set BufferLayout::SbsStereo on the
+    SourceSurfaceInfo delivered to presenters.
+
+    Receivers that do not support stereo MUST render only the left half of
+    an sbs_stereo buffer, scaled to the logical surface dimensions.
+    Squashing the full 2x buffer into the logical viewport is prohibited.
+  </description>
+
+  <!-- ─── Manager (singleton global) ─────────────────────────────────── -->
+
+  <interface name="lm_stereo_manager_v1" version="1">
+    <description summary="stereo surface annotation manager">
+      Singleton object used to create per-surface stereo annotations.
+      Bind it from the registry; there is at most one per compositor.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroy the manager object"/>
+    </request>
+
+    <request name="get_stereo_surface">
+      <description summary="create a stereo annotation for a surface">
+        Create an lm_stereo_surface_v1 annotation object for the given
+        wl_surface.  The caller must not call get_stereo_surface for the
+        same surface more than once; doing so raises the already_annotated
+        protocol error.
+      </description>
+      <arg name="id"      type="new_id" interface="lm_stereo_surface_v1"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+    <enum name="error">
+      <entry name="already_annotated" value="0"
+             summary="get_stereo_surface was called twice for the same surface"/>
+    </enum>
+  </interface>
+
+  <!-- ─── Per-surface annotation ───────────────────────────────────────── -->
+
+  <interface name="lm_stereo_surface_v1" version="1">
+    <description summary="stereo layout annotation for a surface">
+      Describes the stereo buffer layout for an annotated surface.
+      Call set_layout before the first wl_surface.commit so the compositor
+      sees the annotation before the surface maps.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="remove this annotation"/>
+    </request>
+
+    <request name="set_layout">
+      <description summary="declare the buffer layout for this surface">
+        Set the buffer layout.  For sbs_stereo, every buffer committed to
+        the associated wl_surface must be exactly 2 * logical_width wide;
+        the left half [0, logical_width) is the left-eye image, and the
+        right half [logical_width, 2*logical_width) is the right-eye image.
+      </description>
+      <arg name="layout" type="uint" enum="layout"/>
+    </request>
+
+    <enum name="layout">
+      <entry name="mono"       value="0"
+             summary="standard single-view buffer; buffer width == surface width"/>
+      <entry name="sbs_stereo" value="1"
+             summary="side-by-side stereo; buffer width == 2 * surface width"/>
+    </enum>
+  </interface>
+
+</protocol>

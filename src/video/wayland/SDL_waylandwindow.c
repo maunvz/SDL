@@ -43,6 +43,7 @@
 #include "viewporter-client-protocol.h"
 #include "fractional-scale-v1-client-protocol.h"
 #include "xdg-toplevel-icon-v1-client-protocol.h"
+#include "linux-mirror-stereo-v1-client-protocol.h"
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
@@ -134,6 +135,10 @@ static void GetBufferSize(SDL_Window *window, int *width, int *height)
 
     if (FullscreenModeEmulation(window)) {
         GetFullScreenDimensions(window, NULL, NULL, &buf_width, &buf_height);
+    } else if (data->stereo_sbs) {
+        /* SBS stereo: physical buffer is 2× the logical window width */
+        buf_width = window->w * 2;
+        buf_height = window->h;
     } else if (data->draw_viewport) {
         /* Round fractional backbuffer sizes halfway away from zero. */
         buf_width = (int)SDL_lroundf(window->w * data->scale_factor);
@@ -2014,6 +2019,16 @@ int Wayland_CreateWindow(_THIS, SDL_Window *window)
 
     SDL_WAYLAND_register_surface(data->surface);
 
+    /* SBS stereo: annotate before the first wl_surface_commit */
+    if (SDL_GetHintBoolean(SDL_HINT_VIDEO_WAYLAND_SURFACE_STEREO_SBS, SDL_FALSE)) {
+        data->stereo_sbs = SDL_TRUE;
+        if (c->stereo_manager) {
+            data->stereo_surface = lm_stereo_manager_v1_get_stereo_surface(c->stereo_manager, data->surface);
+            lm_stereo_surface_v1_set_layout(data->stereo_surface, LM_STEREO_SURFACE_V1_LAYOUT_SBS_STEREO);
+            WAYLAND_wl_display_flush(c->display);
+        }
+    }
+
     if (c->viewporter) {
         data->draw_viewport = wp_viewporter_get_viewport(c->viewporter, data->surface);
         wp_viewport_set_source(data->draw_viewport,
@@ -2312,6 +2327,10 @@ void Wayland_DestroyWindow(_THIS, SDL_Window *window)
 
         if (wind->draw_viewport) {
             wp_viewport_destroy(wind->draw_viewport);
+        }
+
+        if (wind->stereo_surface) {
+            lm_stereo_surface_v1_destroy(wind->stereo_surface);
         }
 
         if (wind->fractional_scale) {
