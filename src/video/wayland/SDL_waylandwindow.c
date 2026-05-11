@@ -206,9 +206,12 @@ static void ConfigureWindowGeometry(SDL_Window *window)
         if (window_size_changed || drawable_size_changed) {
             if (data->draw_viewport) {
                 wl_surface_set_buffer_scale(data->surface, 1);
-                wp_viewport_set_destination(data->draw_viewport,
-                    data->stereo_sbs ? window->w / 2 : window->w,
-                    window->h);
+                int vp_w = data->stereo_sbs ? window->w / 2 : window->w;
+                int vp_h = window->h;
+                SDL_Log("Wayland stereo_sbs=%d: window=%dx%d drawable=%dx%d viewport->%dx%d",
+                        (int)data->stereo_sbs, window->w, window->h,
+                        data->drawable_width, data->drawable_height, vp_w, vp_h);
+                wp_viewport_set_destination(data->draw_viewport, vp_w, vp_h);
             } else {
                 if (!FullscreenModeEmulation(window)) {
                     /* Round to the next integer in case of a fractional value. */
@@ -2018,7 +2021,10 @@ int Wayland_CreateWindow(_THIS, SDL_Window *window)
     SDL_WAYLAND_register_surface(data->surface);
 
     /* SBS stereo: annotate before the first wl_surface_commit */
-    if (SDL_GetHintBoolean(SDL_HINT_VIDEO_WAYLAND_SURFACE_STEREO_SBS, SDL_FALSE)) {
+    SDL_bool stereo_hint = SDL_GetHintBoolean(SDL_HINT_VIDEO_WAYLAND_SURFACE_STEREO_SBS, SDL_FALSE);
+    SDL_Log("Wayland CreateWindow: stereo_hint=%d viewporter=%p stereo_manager=%p",
+            (int)stereo_hint, (void*)c->viewporter, (void*)c->stereo_manager);
+    if (stereo_hint) {
         data->stereo_sbs = SDL_TRUE;
         if (c->stereo_manager) {
             data->stereo_surface = lm_stereo_manager_v1_get_stereo_surface(c->stereo_manager, data->surface);
