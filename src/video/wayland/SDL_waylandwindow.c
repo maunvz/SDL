@@ -135,10 +135,6 @@ static void GetBufferSize(SDL_Window *window, int *width, int *height)
 
     if (FullscreenModeEmulation(window)) {
         GetFullScreenDimensions(window, NULL, NULL, &buf_width, &buf_height);
-    } else if (data->stereo_sbs) {
-        /* SBS stereo: physical buffer is 2× the logical window width */
-        buf_width = window->w * 2;
-        buf_height = window->h;
     } else if (data->draw_viewport) {
         /* Round fractional backbuffer sizes halfway away from zero. */
         buf_width = (int)SDL_lroundf(window->w * data->scale_factor);
@@ -210,7 +206,9 @@ static void ConfigureWindowGeometry(SDL_Window *window)
         if (window_size_changed || drawable_size_changed) {
             if (data->draw_viewport) {
                 wl_surface_set_buffer_scale(data->surface, 1);
-                wp_viewport_set_destination(data->draw_viewport, window->w, window->h);
+                wp_viewport_set_destination(data->draw_viewport,
+                    data->stereo_sbs ? window->w / 2 : window->w,
+                    window->h);
             } else {
                 if (!FullscreenModeEmulation(window)) {
                     /* Round to the next integer in case of a fractional value. */
