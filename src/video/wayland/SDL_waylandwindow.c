@@ -139,6 +139,10 @@ static void GetBufferSize(SDL_Window *window, int *width, int *height)
         /* Round fractional backbuffer sizes halfway away from zero. */
         buf_width = (int)SDL_lroundf(window->w * data->scale_factor);
         buf_height = (int)SDL_lroundf(window->h * data->scale_factor);
+        /* SBS stereo: buffer is 2× the logical window width. */
+        if (data->stereo_sbs) {
+            buf_width *= 2;
+        }
     } else {
         /* Round the scale factor up in the unlikely scenario of a compositor
          * that supports fractional scaling, but not viewports.
@@ -146,6 +150,10 @@ static void GetBufferSize(SDL_Window *window, int *width, int *height)
         int scale_factor = (int)SDL_ceilf(data->scale_factor);
 
         buf_width = window->w * scale_factor;
+        /* SBS stereo: buffer is 2× the logical window width. */
+        if (data->stereo_sbs) {
+            buf_width *= 2;
+        }
         buf_height = window->h * scale_factor;
     }
 
@@ -206,7 +214,7 @@ static void ConfigureWindowGeometry(SDL_Window *window)
         if (window_size_changed || drawable_size_changed) {
             if (data->draw_viewport) {
                 wl_surface_set_buffer_scale(data->surface, 1);
-                int vp_w = data->stereo_sbs ? window->h : window->w;
+                int vp_w = window->w;
                 int vp_h = window->h;
                 wp_viewport_set_destination(data->draw_viewport, vp_w, vp_h);
             } else {
@@ -506,6 +514,9 @@ static void handle_configure_xdg_toplevel(void *data,
 {
     SDL_WindowData *wind = (SDL_WindowData *)data;
     SDL_Window *window = wind->sdlwindow;
+    SDL_Log("xdg_toplevel configure: %dx%d (window %dx%d, floating %dx%d)",
+            width, height, window->w, window->h,
+            wind->floating_width, wind->floating_height);
 
     enum xdg_toplevel_state *state;
     SDL_bool fullscreen = SDL_FALSE;
